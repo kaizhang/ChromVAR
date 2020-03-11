@@ -1,0 +1,12 @@
+resolver: nightly-2019-05-25
+
+packages:
+- '.'
+
+extra-deps:
+
+- bioinformatics-toolkit-0.9.2
+- HsHTSLib-1.9.2
+- bbi-0.1.1
+- clustering-0.4.1
+- '../eigen'
