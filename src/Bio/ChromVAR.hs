@@ -31,7 +31,7 @@ computeDeviation nMotif nPeak expectation bg motifs =
     withSomeSing (fromIntegral nMotif) $ \(SNat :: Sing motif) -> 
         withSomeSing (fromIntegral nPeak) $ \(SNat :: Sing peak) -> 
             let e = fromJust $ E.fromList [expectation]
-                background = flip map bg $ \b -> ES.transpose $ ES.fromList $ zipWith (\i j -> (i, j-1, 1)) [0..]  b
+                background = flip map bg $ \b -> ES.transpose $ ES.fromList $ zipWith (\i j -> (i, j, 1)) [0..]  b
                 peakByMotif = ES.fromList motifs :: SparseMatrix peak motif Double
                 f (n, cell_by_peak) = withSomeSing (fromIntegral n) $ \(SNat :: Sing n) ->
                     let p = ES.fromList cell_by_peak :: SparseMatrix n peak Double
