@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 module Bio.ChromVAR.Background (getBackgroundPeaks) where
 
 import qualified Data.Vector.Unboxed as U
@@ -8,6 +11,7 @@ import Control.Monad
 import Data.Ord
 import Data.List
 import Control.Arrow
+import qualified Eigen.Matrix as E
 
 import Statistics.Sample
 import System.Random.MWC
@@ -40,7 +44,8 @@ getBackgroundPeak gen (weightMat, bins, membership) = U.generateM n $ \i -> do
 mkPeakGroup :: U.Vector (Double, Double) -> PeakGroup
 mkPeakGroup raw = (weights, V.fromList groups, membership)
   where
-    transformed = zca raw
+    transformed = E.withList (map (\(x,y) -> [x,y]) $ U.toList raw) $ \mat ->
+        U.fromList $ map (\[x,y] -> (x,y)) $ E.toList $ whiten Cholesky mat
     weights = MU.generate (U.length points, U.length points) $ \(i,j) ->
         weight (points U.! i) (points U.! j)
       where

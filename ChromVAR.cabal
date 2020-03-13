@@ -62,9 +62,12 @@ test-suite tests
     , bioinformatics-toolkit
     , conduit
     , eigen
+    , mwc-random
     , tasty
     , tasty-hunit
+    , statistics
     , ChromVAR
+    , vector
 
 source-repository head
   type:     git

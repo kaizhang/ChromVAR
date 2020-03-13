@@ -1,7 +1,19 @@
-module Bio.ChromVAR.Utils where
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+module Bio.ChromVAR.Utils
+    ( weight
+    , Whitening(..)
+    , whiten
+    ) where
 
+import qualified Eigen.Matrix as E
+import Eigen.Matrix (Matrix)
 import qualified Data.Vector.Unboxed as U
-import Statistics.Sample
+import qualified Data.Vector.Storable as S
+import Statistics.Sample (mean)
+import Eigen.Solver.LA
+import Data.Singletons
 
 weight :: (Double, Double) -> (Double, Double) -> Double
 weight (x1, y1) (x2, y2) = gaussian $ sqrt $ (x1 - x2)**2 + (y1 - y2)**2
@@ -10,9 +22,27 @@ weight (x1, y1) (x2, y2) = gaussian $ sqrt $ (x1 - x2)**2 + (y1 - y2)**2
     --gaussian d = d
 {-# INLINE weight #-}
 
+data Whitening = ZCA
+               | Cholesky
+
+-- | Rows are samples, columns are features.
+whiten :: (SingI n, SingI m) => Whitening -> Matrix n m Double -> Matrix n m Double
+whiten method mat = case method of
+    Cholesky -> E.transpose $ E.inverse (cholesky cov) `E.mul` E.transpose mat
+  where
+    cov = covariance mat
+
+covariance :: forall n m. (SingI n, SingI m) => Matrix n m Double -> Matrix m m Double
+covariance mat = E.map (/n) $ E.transpose cs `E.mul` cs
+  where
+    n = fromIntegral $ E.rows mat - 1
+    cs = E.fromColumns $ map f $ E.toColumns mat :: Matrix n m Double
+    f x = let m = mean x in S.map (subtract m) x
+{-# INLINE covariance #-}
+
 -- | Mahalanobis or ZCA whitening
 zca :: U.Vector (Double, Double) -> U.Vector (Double, Double)
-zca points = U.map (`dot'` w) $ U.zip xs' ys'
+zca points = U.map (`dot'` w) $ points -- U.zip xs' ys'
   where
     w = t $ evec `dot` d `dot` t evec
     d = (1 / sqrt (eval1 + eps), 0, 0, 1 / sqrt (eval2 + eps))
