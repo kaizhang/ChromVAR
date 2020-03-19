@@ -8,7 +8,7 @@ module Bio.ChromVAR
     , getBackgroundPeaks
     ) where
 
-import Data.Singletons
+import Data.Singletons (SingI, withSomeSing)
 import Data.Singletons.TypeLits
 import Data.List
 import Conduit
@@ -29,8 +29,8 @@ computeDeviation :: forall io. Monad io
 computeDeviation nMotif nPeak expectation bg motifs =
     withSomeSing (fromIntegral nMotif) $ \(SNat :: Sing motif) -> 
         withSomeSing (fromIntegral nPeak) $ \(SNat :: Sing peak) -> 
-            let e = D.matrix [expectation]
-                background = flip map bg $ \b -> D.transpose $ S.fromTriplet $ zipWith (\i j -> (i, j, 1)) [0..]  b
+            let e = D.fromList expectation
+                background = flip map bg $ \b -> S.fromTriplet $ zipWith (\i j -> (j, i, 1)) [0..]  b
                 peakByMotif = S.fromTriplet motifs :: SparseMatrix peak motif Double
                 f (n, cell_by_peak) = withSomeSing (fromIntegral n) $ \(SNat :: Sing n) ->
                     let p = S.fromTriplet cell_by_peak :: SparseMatrix n peak Double
@@ -47,16 +47,16 @@ computeDeviation' :: forall n m r . (SingI n, SingI m, SingI r)
                   -> (Matrix n r Double, Matrix n r Double)
 computeDeviation' expectation bk motif_by_peak cell_by_peak = (deviations, deviations / sd)
   where
-    deviations = rawDev - mean
-    rawDev = (D.convertAny observed - expected) / expected
-    observed = cell_by_peak %*% motif_by_peak
-    expected = readCount %*% expectation %*% motif_by_peak
-    readCount = cell_by_peak %*% D.replicate 1
+    deviations = rawDev %-% mean
+    rawDev = (observed %-% expected) / expected
+    observed = cell_by_peak @@ motif_by_peak
+    expected = readCount @@ expectation @@ motif_by_peak
+    readCount = cell_by_peak @@ D.replicate 1
     mean = D.map (/ (fromIntegral $ length xs)) $ foldl1' (+) xs
     sd = D.map (sqrt . (/ (fromIntegral $ length xs - 1))) $
         foldl1' (+) $ map (\x -> D.map (**2) $ x - mean) xs
     xs = flip map bk $ \b -> 
-        let sampled = cell_by_peak %*% b %*% motif_by_peak
-            sampled_expected = readCount %*% expectation %*% b %*% motif_by_peak
-        in (D.convertAny sampled - sampled_expected) / sampled_expected
+        let sampled = cell_by_peak @@ b @@ motif_by_peak
+            sampled_expected = readCount @@ expectation @@ b @@ motif_by_peak
+        in (sampled %-% sampled_expected) / sampled_expected
 {-# INLINE computeDeviation' #-}

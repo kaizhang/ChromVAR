@@ -14,7 +14,7 @@ import Statistics.Sample (mean)
 import Data.Matrix.Static.LinearAlgebra
 import qualified Data.Matrix.Static.Dense as D
 import qualified Data.Matrix.Static.Generic as D
-import Data.Singletons
+import Data.Singletons (SingI)
 
 weight :: (Double, Double) -> (Double, Double) -> Double
 weight (x1, y1) (x2, y2) = gaussian $ sqrt $ (x1 - x2)**2 + (y1 - y2)**2
@@ -29,12 +29,12 @@ data Whitening = ZCA
 -- | Rows are samples, columns are features.
 whiten :: (SingI n, SingI m) => Whitening -> Matrix n m Double -> Matrix n m Double
 whiten method mat = case method of
-    Cholesky -> D.transpose $ inverse (cholesky cov) %*% D.transpose mat
+    Cholesky -> D.transpose $ inverse (cholesky cov) @@ D.transpose mat
   where
     cov = covariance mat
 
 covariance :: forall n m. (SingI n, SingI m) => Matrix n m Double -> Matrix m m Double
-covariance mat = D.map (/n) $ D.transpose cs %*% cs
+covariance mat = D.map (/n) $ D.transpose cs @@ cs
   where
     n = fromIntegral $ D.rows mat - 1
     cs = D.fromColumns $ map f $ D.toColumns mat :: Matrix n m Double

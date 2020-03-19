@@ -36,7 +36,7 @@ test = (map round' $ concat dev', map round' $ concat z') @=?
   where
     [(dev', z')] = runIdentity $ runConduit $ yieldMany [(4, cellByPeak)] .|
         computeDeviation 3 3 expectation bg peakBymotif .| sinkList
-    expectation = let e = D.replicate 1 %*% (S.fromTriplet cellByPeak :: SparseMatrix 4 3 Double) :: Matrix 1 3 Double
+    expectation = let e = D.replicate 1 @@ (S.fromTriplet cellByPeak :: SparseMatrix 4 3 Double) :: Matrix 1 3 Double
                       s = VS.sum $ D.flatten e
                   in D.toList $ D.map (/s) e
     round' :: Double -> Double
