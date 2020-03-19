@@ -4,15 +4,16 @@
 module Bio.ChromVAR.Utils
     ( weight
     , Whitening(..)
+    , covariance
     , whiten
     ) where
 
-import qualified Eigen.Matrix as E
-import Eigen.Matrix (Matrix)
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Storable as S
 import Statistics.Sample (mean)
-import Eigen.Solver.LA
+import Data.Matrix.Static.LinearAlgebra
+import qualified Data.Matrix.Static.Dense as D
+import qualified Data.Matrix.Static.Generic as D
 import Data.Singletons
 
 weight :: (Double, Double) -> (Double, Double) -> Double
@@ -28,15 +29,15 @@ data Whitening = ZCA
 -- | Rows are samples, columns are features.
 whiten :: (SingI n, SingI m) => Whitening -> Matrix n m Double -> Matrix n m Double
 whiten method mat = case method of
-    Cholesky -> E.transpose $ E.inverse (cholesky cov) `E.mul` E.transpose mat
+    Cholesky -> D.transpose $ inverse (cholesky cov) %*% D.transpose mat
   where
     cov = covariance mat
 
 covariance :: forall n m. (SingI n, SingI m) => Matrix n m Double -> Matrix m m Double
-covariance mat = E.map (/n) $ E.transpose cs `E.mul` cs
+covariance mat = D.map (/n) $ D.transpose cs %*% cs
   where
-    n = fromIntegral $ E.rows mat - 1
-    cs = E.fromColumns $ map f $ E.toColumns mat :: Matrix n m Double
+    n = fromIntegral $ D.rows mat - 1
+    cs = D.fromColumns $ map f $ D.toColumns mat :: Matrix n m Double
     f x = let m = mean x in S.map (subtract m) x
 {-# INLINE covariance #-}
 

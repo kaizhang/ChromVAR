@@ -9,4 +9,10 @@ extra-deps:
 - HsHTSLib-1.9.2
 - bbi-0.1.1
 - clustering-0.4.1
-- '../eigen'
+- '../matrix-sized'
+#- git:     https://github.com/kaizhang/matrix-sized.git
+#  commit:  b5e9b3e49b654bdafe288037818de50301ce6023
+
+flags:
+  matrix-sized:
+    parallel: true

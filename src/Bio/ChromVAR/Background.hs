@@ -4,6 +4,7 @@
 module Bio.ChromVAR.Background (getBackgroundPeaks) where
 
 import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Storable as S
 import qualified Data.Vector as V
 import qualified Data.Matrix.Unboxed as MU
 import qualified Data.Vector.Unboxed.Mutable as UM
@@ -11,7 +12,8 @@ import Control.Monad
 import Data.Ord
 import Data.List
 import Control.Arrow
-import qualified Eigen.Matrix as E
+import qualified Data.Matrix.Static.Dense as D
+import qualified Data.Matrix.Static.Generic as D
 
 import Statistics.Sample
 import System.Random.MWC
@@ -44,8 +46,8 @@ getBackgroundPeak gen (weightMat, bins, membership) = U.generateM n $ \i -> do
 mkPeakGroup :: U.Vector (Double, Double) -> PeakGroup
 mkPeakGroup raw = (weights, V.fromList groups, membership)
   where
-    transformed = E.withList (map (\(x,y) -> [x,y]) $ U.toList raw) $ \mat ->
-        U.fromList $ map (\[x,y] -> (x,y)) $ E.toList $ whiten Cholesky mat
+    transformed = D.withMatrix (map (\(x,y) -> [x,y]) $ U.toList raw) $ \mat@(D.Matrix _) ->
+        U.fromList $ map ((\[x,y] -> (x,y)) . S.toList) $ D.toRows $ whiten Cholesky mat
     weights = MU.generate (U.length points, U.length points) $ \(i,j) ->
         weight (points U.! i) (points U.! j)
       where
