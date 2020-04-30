@@ -13,6 +13,7 @@ import Data.Singletons.TypeLits
 import Data.List
 import Conduit
 import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as U
 import qualified Data.Matrix.Static.Dense as D
 import qualified Data.Matrix.Static.Sparse as S
 import Data.Matrix.Static.LinearAlgebra
@@ -30,10 +31,10 @@ computeDeviation nMotif nPeak expectation bg motifs =
     withSomeSing (fromIntegral nMotif) $ \(SNat :: Sing motif) -> 
         withSomeSing (fromIntegral nPeak) $ \(SNat :: Sing peak) -> 
             let e = D.fromList expectation
-                background = flip map bg $ \b -> S.fromTriplet $ zipWith (\i j -> (j, i, 1)) [0..]  b
-                peakByMotif = S.fromTriplet motifs :: SparseMatrix peak motif Double
+                background = flip map bg $ \b -> S.fromTriplet $ U.fromList $ zipWith (\i j -> (j, i, 1)) [0..]  b
+                peakByMotif = S.fromTriplet $ U.fromList motifs :: SparseMatrix peak motif Double
                 f (n, cell_by_peak) = withSomeSing (fromIntegral n) $ \(SNat :: Sing n) ->
-                    let p = S.fromTriplet cell_by_peak :: SparseMatrix n peak Double
+                    let p = S.fromTriplet $ U.fromList cell_by_peak :: SparseMatrix n peak Double
                         (mean, sd) = computeDeviation' e background peakByMotif p
                     in (map VS.toList $ D.toRows mean, map VS.toList $ D.toRows sd)
             in mapC f

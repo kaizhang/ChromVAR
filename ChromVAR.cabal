@@ -28,26 +28,12 @@ library
                      , bioinformatics-toolkit >= 0.9.1
                      , containers
                      , conduit
-                     , matrix-sized
+                     , matrix-sized >= 0.1.0
                      , matrices
                      , statistics
                      , vector
                      , mwc-random
                      , singletons
-  default-language:    Haskell2010
-
-executable chromvar
-  hs-source-dirs:      app
-  main-is:             Main.hs
-
-  ghc-options:         -threaded
-                       -rtsopts
-                       -Wall
-
-  build-depends:       base
-                     , ChromVAR
-                     , optparse-applicative
-
   default-language:    Haskell2010
 
 test-suite tests
