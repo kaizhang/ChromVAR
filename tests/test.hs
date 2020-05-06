@@ -17,6 +17,7 @@ import Conduit
 import qualified Data.Matrix.Static.Dense as D
 import qualified Data.Matrix.Static.Generic as D
 import qualified Data.Matrix.Static.Sparse as S
+import Data.Matrix.Dynamic (Dynamic(..), matrix)
 import Data.Matrix.Static.LinearAlgebra
 import Statistics.Sample hiding (covariance)
 import System.Random.MWC (create)
@@ -36,7 +37,7 @@ test = (map round' $ concat dev', map round' $ concat z') @=?
   where
     [(dev', z')] = runIdentity $ runConduit $ yieldMany [(4, cellByPeak)] .|
         computeDeviation 3 3 expectation bg peakBymotif .| sinkList
-    expectation = let e = D.replicate 1 @@ (S.fromTriplet cellByPeak :: SparseMatrix 4 3 Double) :: Matrix 1 3 Double
+    expectation = let e = D.replicate 1 @@ (S.fromTriplet (U.fromList cellByPeak) :: SparseMatrix 4 3 Double) :: Matrix 1 3 Double
                       s = VS.sum $ D.flatten e
                   in D.toList $ D.map (/s) e
     round' :: Double -> Double
@@ -72,8 +73,9 @@ bgTest :: Assertion
 bgTest = do
     input <- readData "tests/data/coordinates.tsv"
     expected <- readData "tests/data/transformed.tsv"
-    let actual = D.withMatrix (map (\(a,b) -> [a,b]) $ U.toList input) $ \mat@(D.Matrix _) ->
-            U.fromList $ map (\[a,b] -> (a,b)) $ map VS.toList $ D.toRows $ whiten Cholesky mat
+    let actual = case matrix (map (\(a,b) -> [a,b]) $ U.toList input) of
+            Dynamic mat@(D.Matrix _) -> U.fromList $ map (\[a,b] -> (a,b)) $
+                map VS.toList $ D.toRows $ whiten Cholesky mat
     U.map (\(x,y) -> (round' x, round' y)) actual @=?
         U.map (\(x,y) -> (round' x, round' y)) expected
   where

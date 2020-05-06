@@ -14,6 +14,7 @@ import Data.List
 import Control.Arrow
 import qualified Data.Matrix.Static.Dense as D
 import qualified Data.Matrix.Static.Generic as D
+import Data.Matrix.Dynamic (Dynamic(..), matrix)
 
 import Statistics.Sample
 import System.Random.MWC
@@ -46,8 +47,9 @@ getBackgroundPeak gen (weightMat, bins, membership) = U.generateM n $ \i -> do
 mkPeakGroup :: U.Vector (Double, Double) -> PeakGroup
 mkPeakGroup raw = (weights, V.fromList groups, membership)
   where
-    transformed = D.withMatrix (map (\(x,y) -> [x,y]) $ U.toList raw) $ \mat@(D.Matrix _) ->
-        U.fromList $ map ((\[x,y] -> (x,y)) . S.toList) $ D.toRows $ whiten Cholesky mat
+    transformed = case matrix (map (\(x,y) -> [x,y]) $ U.toList raw) of
+        Dynamic mat@(D.Matrix _) -> U.fromList $
+           map ((\[x,y] -> (x,y)) . S.toList) $ D.toRows $ whiten Cholesky mat
     weights = MU.generate (U.length points, U.length points) $ \(i,j) ->
         weight (points U.! i) (points U.! j)
       where
